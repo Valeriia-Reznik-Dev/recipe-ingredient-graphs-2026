@@ -1,0 +1,8 @@
+Method,AUC,AP
+GAE (struct only),0.975,0.9808
+GAE,0.9665,0.9745
+resource_allocation,0.9596,0.9636
+adamic_adar,0.9494,0.9543
+cn,0.9465,0.9505
+Node2Vec+LR,0.9399,0.9331
+jaccard,0.5268,0.5749

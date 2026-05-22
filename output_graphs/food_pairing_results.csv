@@ -1,0 +1,3 @@
+cuisine,spearman_rho,p_value,n_pairs,delta,significant,FPH
+[GLOBAL],0.014998769858179758,1.973245847937732e-11,200000,0.017389121124676388,True,↑ supports
+american,0.0126,0.005,50000,0.01249,True,↑ supports
