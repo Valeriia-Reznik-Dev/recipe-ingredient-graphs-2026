@@ -1,81 +1,108 @@
-# Recipe–Ingredient Graphs: три задачи предсказания
+# Recipe–Ingredient Graphs
 
-Проект для курса **SNA Magolego**.
+Анализ корпуса рецептов **RecipeNLG** через графовые модели: построение сети ингредиентов, извлечение структурных признаков и три задачи предсказания на графах.
 
-## Цель проекта
+Учебный проект курса **SNA Magolego**.
 
-Построить граф на основе корпуса рецептов **RecipeNLG** и решить три прикладные задачи графовыми методами, сравнивая классические baseline'ы с графовыми нейросетями: **GraphSAGE** (baseline) и **HeteroGAT** (основная модель на гетерогенном графе рецепт–ингредиент).
+## О проекте
 
-Признаки узлов — **только структурные** (степень, PageRank, clustering, k-core, betweenness, log-частота). Химические / FlavorDB-признаки протестированы и **исключены**: ablation показал отрицательный вклад в AUC. Ингредиенты в выводе переведены **на русский** (`ingredient_ru.py`).
+Из рецептов строятся два графа:
+
+- **Граф I** — ингредиенты, связанные совместным появлением в блюдах (вес ребра = число общих рецептов).
+- **Граф G** — двудольный граф «рецепт ↔ ингредиент».
+
+На этих графах решаются три задачи. Для каждой сравниваются классические методы (логистическая регрессия, эвристики на графе) и графовые нейросети: **GraphSAGE** и **HeteroGAT**.
+
+Признаки узлов — только **структурные**: степень, PageRank, clustering, k-core, betweenness, log-частота. Названия ингредиентов в выводе переводятся на русский (`ingredient_ru.py`).
 
 ## Задачи
 
-| № | Задача | Метод | Ноутбук |
-|---|--------|-------|---------|
-| 1 | **Кухня** | community detection (Leiden) по ингредиентам → вектор рецепта по сообществам → LogReg → GraphSAGE → HeteroGAT; визуализация t-SNE | `04` |
-| 2 | **Замена ингредиентов** | link prediction: скрыть 15 % рёбер двудольного графа и восстановить; кандидаты = возможные замены. Common Neighbors / PPR → GraphSAGE | `05` |
-| 3 | **Реалистичность рецепта** | graph classification real vs fake → LogReg (плотность) → GraphSAGE → HeteroGAT + Global Mean Pooling + интерпретация (attention, SHAP) | `03` |
+| Задача | Ноутбук | Суть |
+|--------|---------|------|
+| Предсказание кухни | [`04_cuisine_prediction.ipynb`](04_cuisine_prediction.ipynb) | Сообщества ингредиентов (Leiden) → классификация кухни рецепта |
+| Подбор замены ингредиента | [`05_ingredient_prediction.ipynb`](05_ingredient_prediction.ipynb) | Link prediction на графе «рецепт — ингредиент» |
+| Реалистичность рецепта | [`03_dish_validity_prediction.ipynb`](03_dish_validity_prediction.ipynb) | Отличие настоящего рецепта от искусственного (graph classification) |
 
-> Нумерация задач (1–3) — по постановке; нумерация ноутбуков (01–05) — по порядку запуска. Соответствие: задача 1 → nb04, задача 2 → nb05, задача 3 → nb03.
+## Структура репозитория
 
-## Ноутбуки (по порядку)
+```
+.
+├── 01_graph_construction.ipynb      # построение графов I и G
+├── 02_feature_engineering.ipynb     # структурные признаки узлов
+├── 03_dish_validity_prediction.ipynb
+├── 04_cuisine_prediction.ipynb
+├── 05_ingredient_prediction.ipynb
+├── data_utils.py                    # загрузка рецептов, метки кухни
+├── gnn_cuisine_classification.py    # HeteroGAT для кухни
+├── gnn_graph_classification.py      # GraphSAGE / HeteroGAT для real vs fake
+├── gnn_link_prediction.py           # GraphSAGE для link prediction
+├── ingredient_ru.py                 # словарь перевода ингредиентов
+├── data_sample.csv                  # небольшой сэмпл для быстрого прогона
+├── output_graphs/                   # графики и промежуточные артефакты
+├── requirements.txt
+└── setup_env.sh
+```
 
-| № | Файл | Содержание |
-|---|------|------------|
-| 01 | `01_graph_construction.ipynb` | Граф рецептов и ингредиентов |
-| 02 | `02_feature_engineering.ipynb` | Структурные признаки узлов |
-| 03 | `03_dish_validity_prediction.ipynb` | Реальное / нереальное блюдо |
-| 04 | `04_cuisine_prediction.ipynb` | Leiden + кухня |
-| 05 | `05_ingredient_prediction.ipynb` | Пропущенный ингредиент |
+## Требования
+
+- Python 3.10+
+- Jupyter Notebook или JupyterLab
+
+Основные библиотеки: NetworkX, scikit-learn, python-igraph, leidenalg, PyTorch, PyTorch Geometric.
+
+## Установка
+
+```bash
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+Либо через conda-скрипт (если используется окружение `pydata-book`):
+
+```bash
+bash setup_env.sh
+```
+
+## Данные
+
+| Файл | Описание |
+|------|----------|
+| `data_sample.csv` | Уже в репозитории; подходит для проверки пайплайна |
+| `full_dataset.csv` | Полный RecipeNLG (~2.2 ГБ); скачивается отдельно и кладётся в корень проекта |
+
+Ноутбуки автоматически переключаются на `data_sample.csv`, если полный датасет не найден.
 
 ## Запуск
 
+1. Установите зависимости (см. выше).
+2. Положите данные в корень проекта.
+3. Запустите ноутбуки **по порядку** с 01 по 05:
+
 ```bash
-pip install -r requirements.txt
 jupyter notebook
 ```
 
-Данные: `data_sample.csv` (в репозитории) или `full_dataset.csv` (полный RecipeNLG).
+**Порядок выполнения**
 
-## Зависимости
+| Шаг | Ноутбук | Результат |
+|-----|---------|-----------|
+| 1 | `01_graph_construction.ipynb` | `ingredient_graph.graphml`, `bipartite_sample.graphml` |
+| 2 | `02_feature_engineering.ipynb` | `node_features_structural.csv`, `node_features.npz` |
+| 3–5 | `03` / `04` / `05` | Модели, метрики, визуализации |
 
-NetworkX, scikit-learn, **python-igraph**, **leidenalg**, **PyTorch Geometric** (GraphSAGE). Химия не используется.
+Графики и JSON/CSV-результаты сохраняются в каталог [`output_graphs/`](output_graphs/).
 
-## Сводка метрик (типичный прогон ноутбуков)
+## Модули Python
 
-Значения зависят от сэмпла и seed; пересчитываются при `Run All`.
+| Модуль | Назначение |
+|--------|------------|
+| `data_utils.py` | Загрузка RecipeNLG, proxy-метки кухни, векторы по сообществам |
+| `gnn_cuisine_classification.py` | Обучение HeteroGAT для задачи кухни |
+| `gnn_graph_classification.py` | Graph classification (real vs fake), counterfactual-анализ |
+| `gnn_link_prediction.py` | GraphSAGE для восстановления рёбер |
+| `ingredient_ru.py` | Перевод названий ингредиентов на русский |
 
-| Задача | Ноутбук | Модель / метод | Метрика | Значение (re-run) | Комментарий |
-|--------|---------|----------------|---------|-------------------|-------------|
-| 1. Кухня | `04` | Leiden | Modularity | 0.24 | 7 сообществ на графе I |
-| 1. Кухня | `04` | Leiden + LogReg | Accuracy | 0.36 | baseline; 7 кухонь (chance ≈ 0.14) |
-| 1. Кухня | `04` | GraphSAGE | Acc / AUC | 0.55 / 0.89 | graph-эмбеддинги рецептов |
-| 1. Кухня | `04` | **HeteroGAT** | **Acc / AUC** | **0.65 / 0.90** | **лучшая модель** |
-| 1. Кухня | `04` | KMeans на Leiden-векторах | ARI / NMI | 0.07 / 0.15 | §4.12 |
-| 1. Кухня | `04` | **KMeans на эмбеддингах HeteroGAT** | **ARI / NMI** | **0.26 / 0.39** | §4.12 — эмбеддинги ×3.5 ближе к кухням |
-| 2. Замена | `05` | Common Neighbors | Hit@5 | 0.04 | скрытый ингредиент, кандидаты из I |
-| 2. Замена | `05` | **PPR** | **Hit@5** | **0.25** | **рабочая эвристика подбора замен (×6 к CN)** |
-| 2. Замена | `05` | **GraphSAGE** | **AUC** | **0.88** | 15 % val-рёбер; признаки узлов + 40 эпох |
-| 2. Замена | `05` | GraphSAGE | Hit@5 (справ.) | 0.77 | true vs 50 neg; монотонный (Hit@1/3/5/10 = 0.43/0.67/0.77/0.85) |
-| 2. Замена | `05` | GraphSAGE + PPR hard-neg | AUC | 0.88 | прироста нет — случайных негативов уже достаточно |
-| 3. Real/fake | `03` | LogReg (плотность) | Acc / AUC | 0.97 / 0.99 | сильнейший baseline |
-| 3. Real/fake | `03` | GraphSAGE (node) | Acc / AUC | 0.89 / 0.95 | graph classification |
-| 3. Real/fake | `03` | GraphSAGE + `global_mean_pool` | Acc / AUC | 0.89 / 0.96 | §3.14 настоящий readout |
-| 3. Real/fake | `03` | MeanPool признаков + LogReg | Acc / AUC | 0.94 / 0.98 | §3.11 |
-| 3. Real/fake | `03` | **HeteroGAT** | **Acc / AUC** | **0.95 / 0.99** | **лучшая GNN** |
+## Автор
 
-Старый AUC ≈ 0.48 был из-за all-ones признаков + 20 эпох (недообучение). После фикса (признаки узлов + 40 эпох) AUC = 0.88. Hard-negatives помогали только недообученной модели (0.48→0.53); на корректно обученной (0.88) эффекта нет — random-негативов достаточно.
-
-Подробные confusion matrix, t-SNE и примеры — в `output_graphs/` и соответствующих ноутбуках.
-
-## Ограничения и примечания (для отчёта)
-
-| Тема | Статус |
-|------|--------|
-| **HeteroGAT** | Реализован (`gnn_cuisine_classification.py`); лучшая модель в задачах 1 и 3. |
-| **Hard negatives (PPR)** | Заведены в обучение (`hard_neg_fn`, nb05 §5.7); PPR считается для первых `max_hard_recipes`=300 рецептов. На обученной модели прироста AUC не дали (0.88 = 0.88) — random-негативов достаточно. |
-| **CN Hit@5 vs GS Hit@5** | **Разные постановки** — сравнивать напрямую некорректно. CN: скрытый ингредиент в рецепте. GS Hit@5: true edge среди 50 случайных негативов. Для GraphSAGE — **AUC**. |
-| **Link prediction (исправлено)** | Узлам добавлены признаки (ингредиент = log-степень + структурные; рецепт = их среднее) вместо all-ones; epochs 20→40 → AUC здоровый (≈0.86). В Hit@K сделан **случайный tie-break** — иначе при «плоских» logits истинный кандидат искусственно вставал на ранг 1. |
-| **Задача 3 (real vs fake)** | LogReg по плотности связей часто **лучше** GraphSAGE — ожидаемо; GS — вторая модель для сравнения. |
-| **Перевод ингредиентов** | `ingredient_ru.py` — частичный словарь; неизвестные имена — как в датасете. |
-| **Legacy в `output_graphs/`** | `chem_embs.pkl`, `gae_model.pt`, `cuisine_clusters_umap.png` — старый пайплайн; текущие ноутбуки не используют. |
+Valeriya Reznik — [recipe-ingredient-graphs-2026](https://github.com/Valeriia-Reznik-Dev/recipe-ingredient-graphs-2026)
