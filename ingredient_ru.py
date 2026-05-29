@@ -1,0 +1,78 @@
+"""Простой словарь EN → RU для частых ингредиентов RecipeNLG."""
+
+ING_RU = {
+    'salt': 'соль', 'sugar': 'сахар', 'flour': 'мука', 'eggs': 'яйца', 'egg': 'яйцо',
+    'butter': 'сливочное масло', 'onion': 'лук', 'onions': 'лук', 'milk': 'молоко',
+    'vanilla': 'ваниль', 'water': 'вода', 'margarine': 'маргарин', 'pepper': 'перец',
+    'black pepper': 'чёрный перец', 'brown sugar': 'коричневый сахар',
+    'baking powder': 'разрыхлитель', 'baking soda': 'сода', 'cinnamon': 'корица',
+    'nuts': 'орехи', 'cream cheese': 'сливочный сыр', 'celery': 'сельдерей',
+    'sour cream': 'сметана', 'pineapple': 'ананас', 'pecans': 'пекан',
+    'tomatoes': 'помидоры', 'tomato': 'помидор', 'cheddar cheese': 'сыр чеддер',
+    'oil': 'масло', 'olive oil': 'оливковое масло', 'vegetable oil': 'растительное масло',
+    'lemon juice': 'лимонный сок', 'garlic': 'чеснок', 'mayonnaise': 'майонез',
+    'vinegar': 'уксус', 'green pepper': 'зелёный перец', 'chicken': 'курица',
+    'ground beef': 'фарш говяжий', 'beef': 'говядина', 'pork': 'свинина',
+    'shortening': 'кулинарный жир', 'potatoes': 'картофель', 'potato': 'картофель',
+    'carrots': 'морковь', 'carrot': 'морковь', 'mushrooms': 'грибы',
+    'powdered sugar': 'сахарная пудра', 'honey': 'мёд', 'rice': 'рис',
+    'pasta': 'паста', 'bread': 'хлеб', 'cheese': 'сыр', 'cream': 'сливки',
+    'yogurt': 'йогурт', 'basil': 'базилик', 'oregano': 'орегано',
+    'parsley': 'петрушка', 'ginger': 'имбирь', 'soy sauce': 'соевый соус',
+    'mustard': 'горчица', 'ketchup': 'кетчуп', 'tomato sauce': 'томатный соус',
+    'chocolate': 'шоколад', 'cocoa': 'какао', 'apple': 'яблоко', 'apples': 'яблоки',
+    'banana': 'банан', 'bananas': 'бананы', 'strawberries': 'клубника',
+    'blueberries': 'черника', 'corn': 'кукуруза', 'cornstarch': 'крахмал',
+    'flour tortillas': 'мука (тортильи)', 'tortilla': 'тортилья',
+    'sausage': 'колбаса', 'bacon': 'бекон', 'ham': 'ветчина', 'turkey': 'индейка',
+    'shrimp': 'креветки', 'salmon': 'лосось', 'tuna': 'тунец',
+    'lentils': 'чечевица', 'beans': 'фасоль', 'chickpeas': 'нут',
+    'tofu': 'тофу', 'spinach': 'шпинат', 'broccoli': 'брокколи',
+    'zucchini': 'кабачок', 'cucumber': 'огурец', 'lettuce': 'салат',
+    'avocado': 'авокадо', 'coconut': 'кокос', 'coconut milk': 'кокосовое молоко',
+    'almonds': 'миндаль', 'walnuts': 'грецкие орехи', 'peanut butter': 'арахисовая паста',
+    'maple syrup': 'кленовый сироп', 'whipped cream': 'взбитые сливки',
+    'evaporated milk': 'сгущённое молоко', 'condensed milk': 'сгущёнка',
+    'yeast': 'дрожжи', 'gelatin': 'желатин', 'paprika': 'паприка',
+    'chili powder': 'перец чили', 'cumin': 'зира', 'nutmeg': 'мускатный орех',
+    'cloves': 'гвоздика', 'thyme': 'тимьян', 'rosemary': 'розмарин',
+    'bay leaf': 'лавровый лист', 'wine': 'вино', 'beer': 'пиво',
+    'chicken broth': 'куриный бульон', 'beef broth': 'говяжий бульон',
+    'stock': 'бульон',     'worcestershire sauce': 'соус Worcestershire',
+    'cocoa powder': 'какао-порошок', 'jell-o': 'желе Jell-O', 'gelatin dessert': 'желе',
+    'lumpia wrappers': 'обёртки для лумпии', 'spring roll wrappers': 'обёртки для спринг-роллов',
+    'pistachio': 'фисташки', 'pistachios': 'фисташки', 'instant pudding': 'быстрорастворимый пудинг',
+    'pudding': 'пудинг', 'light': 'лёгкий (light)', 'low-fat milk': 'обезжиренное молоко',
+    'skim milk': 'обезжиренное молоко', 'sour lowfat milk': 'обезжиренная кисломолочка',
+    'cream topping': 'взбитые сливки (топпинг)', 'pepitas': 'семечки тыквы',
+    'hazelnut liqueur': 'ликёр с фундуком', 'crisp rice': 'хрустящий рис',
+    'paraffin': 'парафин', 'silken': 'шёлковый тофу', 'lumpia': 'лумпия',
+    'mirin': 'мирин', 'miso': 'мисо', 'dashi': 'даши', 'nori': 'нори',
+    'wasabi': 'васаби', 'sake': 'саке', 'sesame oil': 'кунжутное масло',
+    'rice vinegar': 'рисовый уксус', 'hoisin sauce': 'соус хойсин',
+    'oyster sauce': 'устричный соус', 'green onions': 'зелёный лук',
+    'sesame seeds': 'кунжут', 'garam masala': 'гарам масала', 'turmeric': 'куркума',
+    'ghee': 'ги', 'cardamom': 'кардамон', 'coriander': 'кориандр',
+    'dijon mustard': 'дижонская горчица', 'shallots': 'лук-шалот',
+    'tarragon': 'тархун', 'gruyere': 'грюйер', 'creme fraiche': 'крем-фреш',
+    'jalapeno': 'халапеньо', 'cilantro': 'кинза', 'black beans': 'чёрная фасоль',
+    'salsa': 'сальса', 'lime': 'лайм', 'monterey jack': 'сыр Monterey Jack',
+    'corn tortillas': 'кукурузные тортильи', 'barbecue sauce': 'соус барбекю',
+    'mozzarella': 'моцарелла', 'parmesan': 'пармезан', 'ricotta': 'рикотта',
+    'prosciutto': 'прошутто', 'marinara': 'соус маринара',
+    'balsamic vinegar': 'бальзамический уксус',
+    'vanilla extract': 'ванильный экстракт', 'all-purpose flour': 'мука общего назначения',
+    'self-rising flour': 'мука с разрыхлителем', 'heavy cream': 'жирные сливки',
+    'half-and-half': 'сливки 10–18%', 'buttermilk': 'пахта', 'molasses': 'патока',
+    'raisins': 'изюм', 'oats': 'овсянка', 'oatmeal': 'овсянка',
+}
+
+
+def ru(name: str) -> str:
+    """Вернуть русское название; если нет в словаре — исходное имя."""
+    key = name.strip().lower()
+    return ING_RU.get(key, name)
+
+
+def ru_list(names: list[str]) -> list[str]:
+    return [ru(n) for n in names]
