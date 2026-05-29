@@ -38,7 +38,7 @@
 ├── gnn_link_prediction.py           # GraphSAGE для link prediction
 ├── ingredient_ru.py                 # словарь перевода ингредиентов
 ├── data_sample.csv                  # небольшой сэмпл для быстрого прогона
-├── output_graphs/                   # графики и промежуточные артефакты
+├── output_graphs/                   # локальные артефакты (не в git)
 ├── requirements.txt
 └── setup_env.sh
 ```
@@ -91,7 +91,7 @@ jupyter notebook
 | 2 | `02_feature_engineering.ipynb` | `node_features_structural.csv`, `node_features.npz` |
 | 3–5 | `03` / `04` / `05` | Модели, метрики, визуализации |
 
-Графики и JSON/CSV-результаты сохраняются в каталог [`output_graphs/`](output_graphs/).
+Графики и промежуточные файлы сохраняются локально в `output_graphs/` при запуске ноутбуков.
 
 ## Модули Python
 
@@ -102,7 +102,3 @@ jupyter notebook
 | `gnn_graph_classification.py` | Graph classification (real vs fake), counterfactual-анализ |
 | `gnn_link_prediction.py` | GraphSAGE для восстановления рёбер |
 | `ingredient_ru.py` | Перевод названий ингредиентов на русский |
-
-## Автор
-
-Valeriya Reznik — [recipe-ingredient-graphs-2026](https://github.com/Valeriia-Reznik-Dev/recipe-ingredient-graphs-2026)
