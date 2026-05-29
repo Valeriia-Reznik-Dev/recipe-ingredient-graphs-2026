@@ -28,15 +28,6 @@
 | 04 | `04_cuisine_prediction.ipynb` | Leiden + кухня |
 | 05 | `05_ingredient_prediction.ipynb` | Пропущенный ингредиент |
 
-## Связь с Colab-лекциями
-
-| Colab | Где в проекте |
-|-------|----------------|
-| Communities / Leidenalg | этап 4 — `leidenalg.find_partition` |
-| community_layout | этап 4 — `spring_layout` + цвет сообщества |
-| Clustering | этап 4 — вектор рецепта по сообществам |
-| Bayan / Louvain | альтернатива: можно заменить Leiden на `nx.community.louvain_communities` |
-
 ## Запуск
 
 ```bash

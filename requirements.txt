@@ -6,7 +6,7 @@ networkx>=3.1
 matplotlib>=3.7
 tqdm>=4.65
 
-# Сообщества (Colab: Leiden)
+# Сообщества (Leiden)
 python-igraph>=0.11
 leidenalg>=0.10
 
