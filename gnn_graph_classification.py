@@ -140,7 +140,7 @@ def make_fake_recipes(
             replaced = list(rng.choice(candidates, size=n_replace, replace=False))
         else:
             replaced = candidates
-        fake.append(kept + replaced)
+        fake.append([str(x) for x in kept + replaced])
     return fake
 
 
