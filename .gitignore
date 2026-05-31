@@ -20,10 +20,6 @@ env/
 .vscode/
 .claude/
 
-# Personal notes
-ЗАЩИТА_СПИЧ.md
-ШПАРГАЛКА.md
-
 # Dev tooling
 .tools/
 recipe_graph_project_architecture.svg
