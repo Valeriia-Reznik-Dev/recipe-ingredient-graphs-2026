@@ -4,8 +4,6 @@
 
 Учебный проект курса **SNA Magolego**.
 
-**Автор:** [Valeriia Reznik](https://github.com/Valeriia-Reznik-Dev)
-
 ## О проекте
 
 Из рецептов строятся два графа:
