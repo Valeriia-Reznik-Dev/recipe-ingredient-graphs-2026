@@ -452,6 +452,8 @@ def train_hetgat_cuisine(
     epochs: int = 80,
     lr: float = 3e-3,
     test_ratio: float = 0.2,
+    train_idx: np.ndarray | None = None,
+    test_idx: np.ndarray | None = None,
     seed: int = 42,
     verbose: bool = True,
 ) -> SimpleNamespace:
@@ -472,10 +474,14 @@ def train_hetgat_cuisine(
     data = build_hetero_data(G_nx, recipe_ids, I_nx, feat_df, y_enc)
 
     n_rec = len(recipe_ids)
-    idx = np.arange(n_rec)
-    np.random.shuffle(idx)
-    split = int(n_rec * (1 - test_ratio))
-    tr_idx, te_idx = idx[:split], idx[split:]
+    if train_idx is not None and test_idx is not None:
+        tr_idx = np.asarray(train_idx, dtype=int)
+        te_idx = np.asarray(test_idx, dtype=int)
+    else:
+        idx = np.arange(n_rec)
+        np.random.shuffle(idx)
+        split = int(n_rec * (1 - test_ratio))
+        tr_idx, te_idx = idx[:split], idx[split:]
 
     # булевые маски на рецептных узлах
     tr_mask_rec = np.zeros(n_rec, dtype=bool)

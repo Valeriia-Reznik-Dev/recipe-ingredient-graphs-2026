@@ -98,6 +98,20 @@ def label_cuisine(url: str | None, ingredients: list[str]) -> str | None:
     return by_url or by_ing
 
 
+def _parse_directions(value) -> list[str]:
+    """Шаги рецепта из RecipeNLG (строка со списком или уже list)."""
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return []
+    try:
+        steps = ast.literal_eval(value) if isinstance(value, str) else value
+        if isinstance(steps, (list, tuple)):
+            return [str(s).strip() for s in steps if str(s).strip()]
+    except Exception:
+        pass
+    text = str(value).strip()
+    return [text] if text else []
+
+
 def load_recipes_stratified(
     csv_path: Path | str,
     per_cuisine: int = 1500,
@@ -112,7 +126,7 @@ def load_recipes_stratified(
 
     chunk_iter = pd.read_csv(
         csv_path,
-        usecols=['NER', 'link', 'title'],
+        usecols=['NER', 'link', 'title', 'directions'],
         chunksize=50_000,
     )
     for chunk_idx, chunk in enumerate(chunk_iter):
@@ -142,6 +156,7 @@ def load_recipes_stratified(
                 'link': row['link'],
                 'cuisine': cuisine,
                 'ingredients': ings,
+                'directions': _parse_directions(row.get('directions')),
             })
             done[cuisine] += 1
 

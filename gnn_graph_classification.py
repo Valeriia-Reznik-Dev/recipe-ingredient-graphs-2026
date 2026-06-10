@@ -252,3 +252,96 @@ def train_graphsage_validity(
         test_idx=test_idx,
         test_proba=proba[test_idx],
     )
+
+
+def eval_graphsage_inductive_split(
+    rec_tr: list[list[str]],
+    rec_te: list[list[str]],
+    y_tr: np.ndarray,
+    y_te: np.ndarray,
+    feat_graph: nx.Graph | None = None,
+    hidden: int = 64,
+    epochs: int = 40,
+    lr: float = 1e-3,
+    seed: int = 42,
+    device: str | None = None,
+    readout: str = 'node',
+) -> ValidityClfResult:
+    """Inductive GraphSAGE на заранее заданных train/test рецептах."""
+    device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
+    y_tr = np.asarray(y_tr)
+    y_te = np.asarray(y_te)
+
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+
+    if feat_graph is None:
+        from recipe_negatives import build_cooc_graph
+        feat_graph = build_cooc_graph(rec_tr, min_freq=1, min_cooc=1)
+
+    data_tr = recipes_to_hetero(rec_tr, y_tr, I=feat_graph).to(device)
+    data_te = recipes_to_hetero(rec_te, y_te, I=feat_graph).to(device)
+
+    model_cls = RecipeValidityGlobalPool if readout == 'mean' else RecipeValiditySAGE
+    model = model_cls(hidden=hidden).to(device)
+    model(data_tr.x_dict, data_tr.edge_index_dict)
+    opt = torch.optim.Adam(model.parameters(), lr=lr)
+
+    model.train()
+    for _ in range(epochs):
+        opt.zero_grad()
+        logits = model(data_tr.x_dict, data_tr.edge_index_dict)
+        loss = F.binary_cross_entropy_with_logits(logits, data_tr['recipe'].y)
+        loss.backward()
+        opt.step()
+
+    model.eval()
+    with torch.no_grad():
+        proba = torch.sigmoid(model(data_te.x_dict, data_te.edge_index_dict)).cpu().numpy()
+
+    pred = (proba >= 0.5).astype(int)
+    return ValidityClfResult(
+        accuracy=float(accuracy_score(y_te, pred)),
+        f1=float(f1_score(y_te, pred)),
+        auc=float(roc_auc_score(y_te, proba)),
+        model=model,
+        data=data_te,
+        train_idx=np.arange(len(rec_tr)),
+        test_idx=np.arange(len(rec_te)),
+        test_proba=proba,
+    )
+
+
+def train_graphsage_validity_inductive(
+    recipes: list[list[str]],
+    labels: np.ndarray,
+    feat_graph: nx.Graph | None = None,
+    hidden: int = 64,
+    epochs: int = 40,
+    lr: float = 1e-3,
+    test_size: float = 0.2,
+    seed: int = 42,
+    device: str | None = None,
+    readout: str = 'node',
+) -> ValidityClfResult:
+    """Inductive-оценка real vs fake.
+
+    train и test — разные графы: тестовые рецепты не участвуют в обучении
+    (message passing только по train-графу). Признаки ингредиентов из `feat_graph`
+    (обычно граф из обучающих рецептов). Модель применяется к test-графу как есть.
+
+    Отличие от `train_graphsage_validity` (transductive): там единый граф из всех
+    рецептов и маски train/test; тестовые узлы видны при свёртке.
+    """
+    labels = np.asarray(labels)
+    idx = np.arange(len(recipes))
+    tr_idx, te_idx = train_test_split(
+        idx, test_size=test_size, random_state=seed, stratify=labels,
+    )
+    rec_tr = [recipes[i] for i in tr_idx]
+    rec_te = [recipes[i] for i in te_idx]
+    return eval_graphsage_inductive_split(
+        rec_tr, rec_te, labels[tr_idx], labels[te_idx],
+        feat_graph=feat_graph, hidden=hidden, epochs=epochs, lr=lr,
+        seed=seed, device=device, readout=readout,
+    )

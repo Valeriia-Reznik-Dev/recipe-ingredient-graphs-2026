@@ -14,6 +14,29 @@ ING_RU = {
     'vinegar': 'уксус', 'green pepper': 'зелёный перец', 'chicken': 'курица',
     'gravy': 'подливка', 'chicken gravy': 'куриная подливка',
     'brown gravy mix': 'смесь для подливки', 'onion gravy mix': 'смесь для луковой подливки',
+    'applesauce': 'яблочное пюре', 'thick applesauce': 'густое яблочное пюре',
+    'cupcakes': 'кексы', 'cupcake': 'кекс',
+    'caraway': 'тмин', 'caraway seed': 'семена тмина', 'caraway seeds': 'семена тмина',
+    'seed': 'семя', 'seeds': 'семена',
+    'dried apples': 'сушёные яблоки', 'dried apple': 'сушёное яблоко',
+    'coarse salt': 'крупная соль', 'coarse': 'крупный',
+    'karo': 'сироп Karo', 'karo syrup': 'сироп Karo', 'light karo': 'сироп Karo light',
+    'light karo syrup': 'сироп Karo light',
+    'rolled oats': 'овсяные хлопья', 'rolled oatmeal': 'овсяные хлопья',
+    'okra': 'бамия',     'hush puppy mix': 'смесь для hush puppies',
+    'ground squash': 'молотая тыква', 'ground zucchini': 'молотый кабачок',
+    'red': 'красный краситель', 'red food coloring': 'красный пищевой краситель',
+    'slat': 'соль',
+    'warm beer': 'тёплое пиво', 'beer': 'пиво',
+    'blended oatmeal': 'смешанная овсянка', 'oatmeal': 'овсянка',
+    'concord grapes': 'виноград Concord', 'grapes': 'виноград',
+    'anise flavoring': 'анисовая ароматизация', 'anise': 'анис',
+    'annatto': 'аннато', 'annatto seed': 'семя аннато', 'annatto seeds': 'семена аннато',
+    'kanten': 'агар-агар (kanten)',
+    'assorted vegetables': 'ассорти овощей',
+    'cooked sweet potatoes': 'варёный батат',
+    'fluid ounces milk': 'молоко (fluid oz)',
+    'baking flour': 'мука для выпечки',
     'ground beef': 'фарш говяжий', 'beef': 'говядина', 'pork': 'свинина',
     'shortening': 'кулинарный жир', 'potatoes': 'картофель', 'potato': 'картофель',
     'carrots': 'морковь', 'carrot': 'морковь', 'mushrooms': 'грибы',
@@ -65,7 +88,7 @@ ING_RU = {
     'balsamic vinegar': 'бальзамический уксус',
     'vanilla extract': 'ванильный экстракт', 'all-purpose flour': 'мука общего назначения',
     'self-rising flour': 'мука с разрыхлителем', 'heavy cream': 'жирные сливки',
-    'half-and-half': 'сливки 10–18%', 'buttermilk': 'пахта', 'molasses': 'патока',
+    'half-and-half': 'сливки 10–18%', 'buttermilk': 'простокваша', 'molasses': 'патока',
     'raisins': 'изюм', 'oats': 'овсянка', 'oatmeal': 'овсянка',
     'orange soda': 'апельсиновая газировка', 'grain rice': 'зерновой рис',
     'lean ground meat': 'постный фарш', 'ground meat': 'фарш',
@@ -139,7 +162,52 @@ ING_RU = {
     'dry milk': 'сухое молоко', 'evaporated milk': 'сгущённое молоко',
     'sweetened condensed milk': 'сгущённое молоко с сахаром', 'corn syrup': 'кукурузный сироп',
     'light corn syrup': 'лёгкий кукурузный сироп', 'dark corn syrup': 'тёмный кукурузный сироп',
-    'vanilla pudding': 'ванильный пудинг', 'chocolate pudding': 'шоколадный пудинг',
+    'vanilla pudding': 'ванильный пудинг', 'instant vanilla pudding': 'ванильный пудинг быстрого приготовления',
+    'chocolate pudding': 'шоколадный пудинг', 'butterscotch pudding': 'карамельный пудинг',
+    'cookies': 'печенье', 'coffee': 'кофе', 'filling': 'начинка',
+    'anchovy': 'анчоус', 'anchovies': 'анчоусы',
+    'brisket': 'грудинка', 'beef brisket': 'говяжья грудинка',
+    'peppers': 'перец', 'sweet peppers': 'сладкий перец', 'green sweet peppers': 'зелёный сладкий перец',
+    'sugar substitute': 'заменитель сахара', 'substitute': 'заменитель',
+    'ham slices': 'ломтики ветчины',
+    'parkay': 'Parkay', 'parkay margarine': 'маргарин Parkay',
+    'velveeta': 'Velveeta', 'velveeta cheese': 'сыр Velveeta',
+    'ro tel': 'Ro-Tel', 'ro tel tomatoes': 'помидоры Ro-Tel',
+    'mandarin': 'мандарин', 'mandarins': 'мандарины', 'mandarin oranges': 'мандарины',
+    'orange gelatin': 'апельсиновый желатин',
+    'dinner rolls': 'обеденные булочки', 'doritos': 'Doritos',
+    'orange cake': 'апельсиновый кекс', 'yellow cake': 'жёлтый кекс', 'cake': 'кекс',
+    'vanilla flavoring': 'ванильная ароматизация', 'flavoring': 'ароматизация',
+    'head cabbage': 'кочан капусты', 'frozen peas': 'замороженный горох',
+    'ginger paste': 'имбирная паста', 'paste': 'паста',
+    'orange peel': 'апельсиновая цедра', 'peel': 'цедра',
+    'fryer': 'фритюрница',
+    'frozen pie shell': 'замороженная основа для пирога', 'pie shell': 'основа для пирога',
+    'pastry shell': 'основа для выпечки', 'pimiento': 'перец пименто', 'dill': 'укроп',
+    'sherbet': 'щербет', 'orange sherbet': 'апельсиновый щербет',
+    'sherry': 'херес', 'sherry cream': 'сливки с хересом', 'whipping cream sherry': 'сливки с хересом',
+    'bunches': 'пучки', 'bunches broccoli': 'пучки брокколи',
+    'miracle whip': 'Miracle Whip', 'miracle': 'Miracle Whip',
+    'bouillon': 'бульон', 'beef bouillon': 'говяжий бульон', 'chicken bouillon': 'куриный бульон',
+    'bouillon cubes': 'кубики бульона', 'beef bouillon cubes': 'кубики говяжьего бульона',
+    'pimento': 'перец пименто', 'pimentos': 'перец пименто', 'pimientos': 'перец пименто',
+    'broccoli flowerets': 'соцветия брокколи', 'broccoli florets': 'соцветия брокколи',
+    'flowerets': 'соцветия', 'florets': 'соцветия',
+    'fruit cocktail': 'фруктовый коктейль',
+    'orange rind': 'апельсиновая цедра', 'rind': 'цедра',
+    'gelatine': 'желатин', 'flavored gelatin': 'ароматизированный желатин',
+    'lime flavored gelatin': 'лаймовый желатин', 'lime gelatin': 'лаймовый желатин',
+    'dream whip': 'Dream Whip',
+    'sweet apple cider': 'сладкий яблочный сидр', 'hot water': 'горячая вода',
+    'orange jello': 'апельсиновое желе', 'jello': 'желе Jell-O',
+    'oregano leaves': 'листья орегано', 'leaves': 'листья',
+    'worcestershire': 'соус Worcestershire', 'fluid ounces': 'жидкие унции',
+    'low fat margarine': 'обезжиренный маргарин', 'low-fat margarine': 'обезжиренный маргарин',
+    'white meat': 'белое мясо', 'red apple': 'красное яблоко',
+    'flavored': 'ароматизированный',
+    'fresh strawberries': 'свежая клубника',
+    'cider vinegar': 'яблочный уксус', 'seeded raisins': 'изюм без косточек',
+    'butterscotch': 'карамель (butterscotch)', 'rolls': 'булочки',
     'butterscotch chips': 'карамельные капли', 'butterscotch morsels': 'карамельные капли',
     'semi sweet chocolate chips': 'горькие шоколадные капли', 'semi-sweet chocolate chips': 'горькие шоколадные капли',
     'mini marshmallows': 'мини-зефир', 'miniature marshmallows': 'мини-зефир',
@@ -202,12 +270,22 @@ ING_RU = {
     'bone in': 'на кости', 'trimmed': 'очищенный', 'boneless skinless chicken breasts': 'куриная грудка без кости и кожи',
 }
 
-_SKIP_WORDS = frozenset({'of', 'for', 'and', 'with', 'a', 'an', 'the', 'in', 'on', 'to', 'or', 'from', 'at', 'by'})
+_SKIP_WORDS = frozenset({'of', 'for', 'and', 'with', 'a', 'an', 'the', 'in', 'on', 'to', 'or', 'from', 'at', 'by', '+'})
+_JUNK_INGREDIENTS = frozenset({'+', '++', '*', '&'})
 _RUNTIME_RU: dict[str, str] = {}
+
+
+def is_junk(name) -> bool:
+    """Артефакты NER (например «+» в RecipeNLG) — не ингредиенты."""
+    key = _normalize(name)
+    if not key or key in _JUNK_INGREDIENTS:
+        return True
+    return len(key) == 1 and not key.isalpha()
 
 _MODIFIERS = {
     'lean': 'постный', 'italian': 'итальянский', 'french': 'французский',
     'generous': 'щедрый', 'extra': 'extra', 'light': 'лёгкий', 'low-fat': 'обезжиренный',
+    'warm': 'тёплый', 'blended': 'смешанный', 'concord': 'Concord',
     'fresh': 'свежий', 'dried': 'сушёный', 'frozen': 'замороженный',
     'chopped': 'рубленый', 'sliced': 'нарезанный', 'grated': 'тёртый',
     'shredded': 'тёртый', 'cooked': 'варёный', 'raw': 'сырой',
@@ -224,6 +302,7 @@ _MODIFIERS = {
     'crushed': 'тёртое', 'whole': 'цельное', 'nonfat': 'обезжиренное', 'fat free': 'обезжиренное',
     'low sodium': 'малосолёное', 'no salt added': 'без добавленной соли',
     'sweet': 'сладкое', 'sour': 'кислое', 'hot': 'острое', 'mild': 'неострое',
+    'low fat': 'обезжиренный', 'flavored': 'ароматизированный',
     'large': 'крупное', 'small': 'мелкое', 'medium': 'среднее', 'boneless': 'без кости',
     'skinless': 'без кожи', 'lean': 'постное', 'dark': 'тёмное', 'light': 'лёгкое',
 }
@@ -329,5 +408,9 @@ def ru(name: str) -> str:
     return tr
 
 
+def filter_ingredients(names: list[str]) -> list[str]:
+    return [n for n in names if not is_junk(n)]
+
+
 def ru_list(names: list[str]) -> list[str]:
-    return [ru(n) for n in names]
+    return [ru(n) for n in names if not is_junk(n)]
