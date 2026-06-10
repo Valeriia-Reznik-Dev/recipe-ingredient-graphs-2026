@@ -33,9 +33,10 @@
 ├── 04_cuisine_prediction.ipynb
 ├── 05_ingredient_prediction.ipynb
 ├── data_utils.py                    # загрузка рецептов, метки кухни
-├── gnn_cuisine_classification.py    # HeteroGAT для кухни
-├── gnn_graph_classification.py      # GraphSAGE / HeteroGAT для real vs fake
-├── gnn_link_prediction.py           # GraphSAGE для link prediction
+├── gnn_cuisine_classification.py    # GraphSAGE / HeteroSAGE / HeteroGAT для кухни
+├── gnn_graph_classification.py      # GraphSAGE для real vs fake
+├── gnn_link_prediction.py           # GraphSAGE link prediction
+├── gnn_multitask.py                 # multitask validity + link (не в ноутбуках)
 ├── ingredient_ru.py                 # словарь перевода ингредиентов
 ├── data_sample.csv                  # небольшой сэмпл для быстрого прогона
 ├── output_graphs/                   # локальные артефакты (не в git)
@@ -98,7 +99,8 @@ jupyter notebook
 | Модуль | Назначение |
 |--------|------------|
 | `data_utils.py` | Загрузка RecipeNLG, proxy-метки кухни, векторы по сообществам |
-| `gnn_cuisine_classification.py` | Обучение HeteroGAT для задачи кухни |
-| `gnn_graph_classification.py` | Graph classification (real vs fake), counterfactual-анализ |
-| `gnn_link_prediction.py` | GraphSAGE для восстановления рёбер |
+| `gnn_cuisine_classification.py` | GraphSAGE / HeteroSAGE / HeteroGAT для кухни (nb04) |
+| `gnn_graph_classification.py` | GraphSAGE graph classification real vs fake (nb03) |
+| `gnn_link_prediction.py` | GraphSAGE link prediction (nb05) |
+| `gnn_multitask.py` | Совмещённый validity + link (экспериментальный) |
 | `ingredient_ru.py` | Перевод названий ингредиентов на русский |

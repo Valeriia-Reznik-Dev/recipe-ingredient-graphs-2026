@@ -10,7 +10,7 @@ recipe_embeddings.py
   * process — признаки процесса из `directions` (варка/жарка/сырое, время, шаги);
   * joint   — конкатенация доступных представлений.
 
-extract_process_features / process_matrix полностью реализованы и протестированы.
+extract_process_features / process_matrix реализованы; валидация — в nb04 §4.13.
 Колонка `directions` загружается в `data_utils.load_recipes_stratified`.
 """
 
@@ -137,7 +137,7 @@ def bge_embedding(texts, model_name="BAAI/bge-small-en-v1.5", batch_size=64,
 # Сравнение представлений: classification + clustering
 # --------------------------------------------------------------------------- #
 def evaluate_representations(reps: dict, y, seed=42, cv=4):
-    """Для каждого представления: CV-accuracy/F1 классификатора + silhouette, NMI, ARI."""
+    """Для каждого представления: CV-accuracy/F1 + silhouette/NMI/ARI по KMeans-кластерам."""
     from sklearn.cluster import KMeans
     from sklearn.linear_model import LogisticRegression
     from sklearn.metrics import (
@@ -163,7 +163,7 @@ def evaluate_representations(reps: dict, y, seed=42, cv=4):
         km = KMeans(n_clusters=k, n_init=10, random_state=seed).fit_predict(Xs)
         out.append(dict(
             representation=name, dim=X.shape[1], acc_cv=acc, f1_cv=f1,
-            silhouette=float(silhouette_score(Xs, yy)),
+            silhouette=float(silhouette_score(Xs, km)),
             NMI=float(normalized_mutual_info_score(yy, km)),
             ARI=float(adjusted_rand_score(yy, km)),
         ))
@@ -197,6 +197,13 @@ def build_joint(*reps):
     return np.hstack(parts) if parts else None
 
 
+def is_target_pair(a, b, target) -> bool:
+    """True, если {a, b} совпадает с target, независимо от порядка в колонке pair."""
+    if not target:
+        return False
+    return {str(a), str(b)} == {str(x) for x in target}
+
+
 def all_pair_separabilities(reps: dict, y, seed=42, cv=4):
     """CV-accuracy бинарного «a vs b» для каждой пары кухонь и каждого представления."""
     from itertools import combinations
@@ -204,7 +211,7 @@ def all_pair_separabilities(reps: dict, y, seed=42, cv=4):
     cuis = sorted({str(v) for v in y})
     rows = []
     for a, b in combinations(cuis, 2):
-        row = {'a': a, 'b': b, 'pair': f'{a} / {b}'}
+        row = {'a': a, 'b': b, 'pair': f'{a} / {b}'}  # a < b (combinations на sorted cuis)
         for name, X in reps.items():
             row[name] = pair_separability(X, y, a, b, seed=seed, cv=cv)
         rows.append(row)

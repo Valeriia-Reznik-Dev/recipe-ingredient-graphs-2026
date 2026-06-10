@@ -7,8 +7,8 @@ gnn_multitask.py
   * validity — BCE по меткам рецептов;
   * link     — BCE по рёбрам рецепт↔ингредиент (decode-MLP).
 
-Validity test_AUC — inductive GraphSAGE-протокол §3.8.1 (recipes_to_hetero + I_train).
-Link Hit@k — per-recipe ranking на val-рёбрах real-рецептов (50 негативов, nb05).
+Validity: train_auc/train_acc на train-рецептах; test_AUC — если переданы test_recipes/test_labels.
+Link Hit@k — per-recipe ranking на val-рёбрах (50 негативов, nb05).
 """
 
 from __future__ import annotations
@@ -22,7 +22,9 @@ from gnn_graph_classification import recipes_to_hetero
 from gnn_link_prediction import (
     HeteroRecipeSAGE,
     _build_hard_negatives,
+    _edge_set,
     _hits_at_k_per_edge,
+    _hits_at_k_hard_per_edge,
     _sample_negatives,
     _split_edges,
 )
@@ -31,13 +33,11 @@ from gnn_link_prediction import (
 class MultiTaskHeteroGNN(nn.Module):
     """HeteroRecipeSAGE + validity head; link через encoder.decode."""
 
-    def __init__(self, hidden: int = 64, num_layers: int = 2, conv: str = "sage"):
+    def __init__(self, hidden: int = 64):
         super().__init__()
         self.encoder = HeteroRecipeSAGE(hidden=hidden)
         self.val_head = nn.Linear(hidden, 1)
         self.hidden = hidden
-        self.num_layers = 2
-        self.conv = "sage"
 
     def encode(self, x_dict, edge_index_dict):
         return self.encoder.encode(x_dict, edge_index_dict)
@@ -77,10 +77,7 @@ def train_multitask(
     hard_neg_fn=None,
     ing_set=None,
     I_train=None,
-    feat_df=None,
     hidden=64,
-    num_layers=2,
-    conv="sage",
     epochs=60,
     lr=1e-3,
     lambda_link=1.0,
@@ -129,26 +126,30 @@ def train_multitask(
     link_val_frac = max(val_frac, 0.15) if link_eval_all else hide_frac
     train_ei, val_ei = _split_edges(real_ei, val_ratio=link_val_frac, seed=seed)
 
-    model = MultiTaskHeteroGNN(hidden, num_layers, conv).to(device)
+    model = MultiTaskHeteroGNN(hidden).to(device)
     opt = torch.optim.Adam(model.parameters(), lr=lr)
 
-    existing = set(map(tuple, edge_index.t().tolist()))
-    train_pairs = set(map(tuple, train_ei.t().tolist()))
+    true_pairs = _edge_set(edge_index)
     n_neg = min(max(train_ei.size(1), 64), n_pos_per_epoch)
+    forbidden_train = true_pairs.copy()
     if hard_neg_fn is not None and task in ("both", "link"):
         train_neg = _build_hard_negatives(
-            train_ei, data, hard_neg_fn, 0.5, existing.copy(), rng,
+            train_ei, data, hard_neg_fn, 0.5, forbidden_train, rng,
             min(max_ppr_recipes, n_real),
         )
     else:
         train_neg = _sample_negatives(
             data["recipe"].num_nodes, data["ingredient"].num_nodes,
-            n_neg, train_pairs.copy(), rng,
+            n_neg, forbidden_train, rng,
         )
 
     fake_ei = edge_index[:, ~real_edge_mask]
     if inductive:
-        mp_ei = torch.cat([train_ei, fake_ei], dim=1) if fake_ei.size(1) else train_ei
+        if fake_ei.size(1) > 0:
+            fake_train_ei, _ = _split_edges(fake_ei, val_ratio=link_val_frac, seed=seed + 1)
+            mp_ei = torch.cat([train_ei, fake_train_ei], dim=1)
+        else:
+            mp_ei = train_ei
     else:
         mp_ei = edge_index
 
@@ -190,8 +191,6 @@ def train_multitask(
             print(f"  epoch {ep:>3}  loss={loss.item():.4f}")
 
     out = {
-        "num_layers": num_layers,
-        "conv": conv,
         "task": task,
         "inductive": bool(inductive),
         "hidden": hidden,
@@ -203,16 +202,22 @@ def train_multitask(
         if do_val:
             proba = torch.sigmoid(model.val_head(z["recipe"]).view(-1)).cpu().numpy()
             if len(np.unique(y_all)) > 1:
-                out["val_auc"] = float(roc_auc_score(y_all, proba))
-            out["val_acc"] = float(accuracy_score(y_all, (proba >= 0.5).astype(int)))
+                out["train_auc"] = float(roc_auc_score(y_all, proba))
+            out["train_acc"] = float(accuracy_score(y_all, (proba >= 0.5).astype(int)))
             out["n_train_recipes"] = int(len(y_all))
 
         if task in ("both", "link") and val_ei.size(1) > 0:
             hits = _hits_at_k_per_edge(
-                model.encoder, z, val_ei, train_ei,
+                model.encoder, z, val_ei, true_pairs,
                 data["ingredient"].num_nodes, device, rng, ks=k_eval, num_neg=50,
             )
             out.update({f"link_hit@{k}": v for k, v in hits.items()})
+            if hard_neg_fn is not None:
+                hits_hard = _hits_at_k_hard_per_edge(
+                    model.encoder, z, val_ei, train_ei, true_pairs, data,
+                    hard_neg_fn, device, rng, ks=k_eval, num_neg=50,
+                )
+                out.update({f"link_hit_hard@{k}": v for k, v in hits_hard.items()})
             out["n_held"] = int(val_ei.size(1))
 
     if test_real_recipes is not None and test_fake_recipes is not None and do_val:

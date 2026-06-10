@@ -3,11 +3,12 @@ gnn_cuisine_classification.py
 ==============================
 Вспомогательный модуль для задач:
   - Задача 1: предсказание кухни (nb04) — GraphSAGE baseline + HeteroGAT
-  - Задача 3: real vs fake recipe (nb03) — HeteroGAT (можно использовать ту же модель)
+  - Задача 3: real vs fake recipe (nb03) — HeteroGAT на полном I + feat_df
 
 Архитектура:
-  GraphSAGE   — однородный граф (рецепт ↔ ингредиент слиты в один тип узлов)
-  HeteroGAT   — гетерогенный граф с двумя типами узлов: 'recipe' и 'ingredient'
+  GraphSAGE (homo)  — однородный граф (рецепт ↔ ингредиент слиты в один тип узлов)
+  HeteroSAGE        — тот же гетерограф, что у HeteroGAT, но SAGEConv (ablation)
+  HeteroGAT         — гетерогенный граф с двумя типами узлов: 'recipe' и 'ingredient'
                 ребро: ('recipe', 'contains', 'ingredient') + обратное
 
 Входные данные:
@@ -36,6 +37,7 @@ from sklearn.metrics import (
     roc_auc_score,
     classification_report,
 )
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from torch import nn
 from torch_geometric.data import Data, HeteroData
@@ -225,6 +227,8 @@ class HeteroGATCuisine(nn.Module):
 
     def __init__(self, in_channels: int, hidden: int, num_classes: int, heads: int = 4):
         super().__init__()
+        if hidden % heads != 0:
+            raise ValueError(f"hidden ({hidden}) must be divisible by heads ({heads})")
         # Слой 1: recipe→ing и ing→recipe
         self.conv1 = HeteroConv({
             ('recipe', 'contains', 'ingredient'): PyGGATConv(
@@ -279,6 +283,32 @@ class HeteroGATCuisine(nn.Module):
         return att_ei, alpha.mean(dim=1)
 
 
+class HeteroSAGECuisine(nn.Module):
+    """2-слойный HeteroSAGE на том же гетерографе, что HeteroGAT (ablation: SAGE vs attention)."""
+
+    def __init__(self, in_channels: int, hidden: int, num_classes: int):
+        super().__init__()
+        self.conv1 = HeteroConv({
+            ('recipe', 'contains', 'ingredient'): SAGEConv((-1, -1), hidden),
+            ('ingredient', 'in', 'recipe'): SAGEConv((-1, -1), hidden),
+        }, aggr='sum')
+        self.conv2 = HeteroConv({
+            ('recipe', 'contains', 'ingredient'): SAGEConv((hidden, hidden), hidden),
+            ('ingredient', 'in', 'recipe'): SAGEConv((hidden, hidden), hidden),
+        }, aggr='sum')
+        self.clf = nn.Linear(hidden, num_classes)
+
+    def embed(self, x_dict, edge_index_dict):
+        x = self.conv1(x_dict, edge_index_dict)
+        x = {k: v.relu() for k, v in x.items()}
+        x = self.conv2(x, edge_index_dict)
+        x = {k: v.relu() for k, v in x.items()}
+        return x
+
+    def forward(self, x_dict, edge_index_dict):
+        return self.clf(self.embed(x_dict, edge_index_dict)['recipe'])
+
+
 @torch.no_grad()
 def top_attention_ingredients(model, data, recipe_idx, ing_names, top_k=5):
     """
@@ -289,6 +319,9 @@ def top_attention_ingredients(model, data, recipe_idx, ing_names, top_k=5):
     data       : HeteroData (из build_hetero_data)
     recipe_idx : индекс рецепта в data['recipe']
     ing_names  : список имён ингредиентов (sorted(I_nx.nodes()))
+
+    Веса нормированы внутри рецепта; сравнивать абсолютные значения между рецептами
+    разной длины нельзя. Attention — не causal importance.
     """
     att_ei, alpha = model.recipe_attention(data.x_dict, data.edge_index_dict)
     mask = att_ei[1] == recipe_idx
@@ -301,6 +334,39 @@ def top_attention_ingredients(model, data, recipe_idx, ing_names, top_k=5):
 # ─────────────────────────────────────────────────────────────────────────────
 # 3. ОБУЧЕНИЕ
 # ─────────────────────────────────────────────────────────────────────────────
+
+def stratified_recipe_split(
+    n_rec: int,
+    y_enc: np.ndarray,
+    test_ratio: float = 0.2,
+    seed: int = 42,
+    train_idx: np.ndarray | None = None,
+    test_idx: np.ndarray | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Стратифицированный train/test по меткам кухни (одинаковый для всех моделей)."""
+    if train_idx is not None and test_idx is not None:
+        return np.asarray(train_idx, dtype=int), np.asarray(test_idx, dtype=int)
+    idx = np.arange(n_rec)
+    return train_test_split(
+        idx, test_size=test_ratio, random_state=seed, stratify=y_enc,
+    )
+
+
+def _monitor_val_indices(
+    tr_idx: np.ndarray,
+    y_enc: np.ndarray,
+    seed: int,
+    val_ratio: float = 0.15,
+) -> np.ndarray:
+    """Stratified val из train — только для логов во время обучения, не для финальной оценки."""
+    y_tr = y_enc[tr_idx]
+    if len(tr_idx) < 4 or len(np.unique(y_tr)) < 2:
+        return np.asarray(tr_idx[: max(1, len(tr_idx) // 5)], dtype=int)
+    _, val_idx = train_test_split(
+        tr_idx, test_size=val_ratio, random_state=seed + 1, stratify=y_tr,
+    )
+    return np.asarray(val_idx, dtype=int)
+
 
 def _train_loop(model, data, optimizer, mask, is_hetero: bool):
     model.train()
@@ -321,17 +387,16 @@ def _eval(model, data, train_mask, test_mask, le, is_hetero: bool):
     model.eval()
     if is_hetero:
         out = model(data.x_dict, data.edge_index_dict)
-        y_true = data['recipe'].y.numpy()
-        proba = torch.softmax(out, dim=1).numpy()
+        y_true = data['recipe'].y.cpu().numpy()
+        proba = torch.softmax(out, dim=1).cpu().numpy()
         pred = proba.argmax(axis=1)
-        # разбиваем train/test по маскам (переданным как булев массив на рецептах)
         y_tr, pred_tr = y_true[train_mask], pred[train_mask]
         y_te, pred_te = y_true[test_mask], pred[test_mask]
         proba_te = proba[test_mask]
     else:
         out = model(data.x, data.edge_index)
-        y_true = data.y.numpy()
-        proba = torch.softmax(out, dim=1).numpy()
+        y_true = data.y.cpu().numpy()
+        proba = torch.softmax(out, dim=1).cpu().numpy()
         pred = proba.argmax(axis=1)
         y_tr, pred_tr = y_true[train_mask], pred[train_mask]
         y_te, pred_te = y_true[test_mask], pred[test_mask]
@@ -376,19 +441,16 @@ def train_graphsage_cuisine(
     epochs: int = 80,
     lr: float = 3e-3,
     test_ratio: float = 0.2,
+    train_idx: np.ndarray | None = None,
+    test_idx: np.ndarray | None = None,
     seed: int = 42,
     verbose: bool = True,
 ) -> SimpleNamespace:
     """
-    GraphSAGE baseline для классификации кухни.
+    GraphSAGE baseline (однородный граф) для классификации кухни.
 
-    Parameters
-    ----------
-    G_nx       : двудольный граф рецепт ↔ ингредиент
-    recipe_ids : список ID рецептных узлов (вида 'recipe::N')
-    labels     : метки кухни (строки), по одной на рецепт
-    I_nx       : граф ингредиент-ингредиент
-    feat_df    : DataFrame с структурными признаками ингредиентов (индекс = имя)
+    Transductive: train и test в одном графе, различаются только маской.
+    Для сравнения с HeteroGAT передайте одинаковые ``train_idx`` / ``test_idx``.
     """
     torch.manual_seed(seed)
     random.seed(seed)
@@ -400,17 +462,14 @@ def train_graphsage_cuisine(
 
     data = build_homogeneous_data(G_nx, recipe_ids, I_nx, feat_df, y_enc)
 
-    # train/test split на рецептах
     n_rec = data.n_recipes
-    idx = np.arange(n_rec)
-    np.random.shuffle(idx)
-    split = int(n_rec * (1 - test_ratio))
-    tr_idx, te_idx = idx[:split], idx[split:]
+    tr_idx, te_idx = stratified_recipe_split(
+        n_rec, y_enc, test_ratio, seed, train_idx, test_idx,
+    )
+    val_idx = _monitor_val_indices(tr_idx, y_enc, seed)
 
     train_mask = torch.zeros(len(data.x), dtype=torch.bool)
-    test_mask  = torch.zeros(len(data.x), dtype=torch.bool)
     train_mask[tr_idx] = True
-    test_mask[te_idx]  = True
 
     model = GraphSAGECuisine(data.x.shape[1], hidden, n_classes)
     opt = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=5e-4)
@@ -418,10 +477,10 @@ def train_graphsage_cuisine(
     for ep in range(1, epochs + 1):
         loss = _train_loop(model, data, opt, train_mask, is_hetero=False)
         if verbose and ep % 20 == 0:
-            _, _, y_te, pred_te, _ = _eval(
-                model, data, tr_idx, te_idx, le, is_hetero=False)
-            acc = accuracy_score(y_te, pred_te)
-            print(f'  [GraphSAGE] epoch {ep:3d}  loss={loss:.4f}  test_acc={acc:.3f}')
+            _, _, y_val, pred_val, _ = _eval(
+                model, data, tr_idx, val_idx, le, is_hetero=False)
+            acc = accuracy_score(y_val, pred_val)
+            print(f'  [GraphSAGE] epoch {ep:3d}  loss={loss:.4f}  val_acc={acc:.3f}')
 
     _, _, y_te, pred_te, proba_te = _eval(
         model, data, tr_idx, te_idx, le, is_hetero=False)
@@ -460,8 +519,8 @@ def train_hetgat_cuisine(
     """
     HeteroGAT для классификации кухни (или задачи real vs fake при binary labels).
 
-    Та же функция работает для задачи 3 (real vs fake): просто передайте
-    labels=['real','fake','real',...] или [1, 0, 1, ...] как строки.
+    Transductive: test-рецепты в общем графе участвуют в message passing.
+    Для nb04 / §3.8.1 передайте одинаковые ``train_idx`` и ``test_idx``.
     """
     torch.manual_seed(seed)
     random.seed(seed)
@@ -474,31 +533,19 @@ def train_hetgat_cuisine(
     data = build_hetero_data(G_nx, recipe_ids, I_nx, feat_df, y_enc)
 
     n_rec = len(recipe_ids)
-    if train_idx is not None and test_idx is not None:
-        tr_idx = np.asarray(train_idx, dtype=int)
-        te_idx = np.asarray(test_idx, dtype=int)
-    else:
-        idx = np.arange(n_rec)
-        np.random.shuffle(idx)
-        split = int(n_rec * (1 - test_ratio))
-        tr_idx, te_idx = idx[:split], idx[split:]
-
-    # булевые маски на рецептных узлах
-    tr_mask_rec = np.zeros(n_rec, dtype=bool)
-    te_mask_rec = np.zeros(n_rec, dtype=bool)
-    tr_mask_rec[tr_idx] = True
-    te_mask_rec[te_idx] = True
+    tr_idx, te_idx = stratified_recipe_split(
+        n_rec, y_enc, test_ratio, seed, train_idx, test_idx,
+    )
+    val_idx = _monitor_val_indices(tr_idx, y_enc, seed)
 
     in_ch = data['recipe'].x.shape[1]
     model = HeteroGATCuisine(in_ch, hidden, n_classes, heads=heads)
     opt = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=5e-4)
 
-    # Обучаем только на train-подмножестве рецептов
-    # (для простоты передаём весь граф, учим loss только на tr_idx)
     for ep in range(1, epochs + 1):
         model.train()
         opt.zero_grad()
-        out = model(data.x_dict, data.edge_index_dict)    # (n_rec, C)
+        out = model(data.x_dict, data.edge_index_dict)
         loss = F.cross_entropy(out[tr_idx], data['recipe'].y[tr_idx])
         loss.backward()
         opt.step()
@@ -507,18 +554,96 @@ def train_hetgat_cuisine(
             model.eval()
             with torch.no_grad():
                 out_ev = model(data.x_dict, data.edge_index_dict)
-            pred_te = out_ev[te_idx].argmax(dim=1).numpy()
-            y_te = data['recipe'].y[te_idx].numpy()
-            acc = accuracy_score(y_te, pred_te)
-            print(f'  [HeteroGAT] epoch {ep:3d}  loss={loss:.4f}  test_acc={acc:.3f}')
+            pred_val = out_ev[val_idx].argmax(dim=1).cpu().numpy()
+            y_val = data['recipe'].y[val_idx].cpu().numpy()
+            acc = accuracy_score(y_val, pred_val)
+            print(f'  [HeteroGAT] epoch {ep:3d}  loss={loss:.4f}  val_acc={acc:.3f}')
 
     model.eval()
     with torch.no_grad():
         out_final = model(data.x_dict, data.edge_index_dict)
         recipe_emb = model.embed(data.x_dict, data.edge_index_dict)['recipe'].cpu().numpy()
-    proba_te = torch.softmax(out_final[te_idx], dim=1).numpy()
+    proba_te = torch.softmax(out_final[te_idx], dim=1).cpu().numpy()
     pred_te  = proba_te.argmax(axis=1)
-    y_te     = data['recipe'].y[te_idx].numpy()
+    y_te     = data['recipe'].y[te_idx].cpu().numpy()
+
+    res = _make_result(y_te, pred_te, proba_te, le)
+    res.model = model
+    res.data = data
+    res.le = le
+    res.ing_names = sorted(I_nx.nodes())
+    res.recipe_ids = recipe_ids
+    res.train_idx = tr_idx
+    res.test_idx = te_idx
+    res.recipe_emb = recipe_emb
+    res.y_all = data['recipe'].y.cpu().numpy()
+    return res
+
+
+def train_hetero_sage_cuisine(
+    G_nx: nx.Graph,
+    recipe_ids: list[str],
+    labels: list[str],
+    I_nx: nx.Graph,
+    feat_df,
+    hidden: int = 128,
+    epochs: int = 80,
+    lr: float = 3e-3,
+    test_ratio: float = 0.2,
+    train_idx: np.ndarray | None = None,
+    test_idx: np.ndarray | None = None,
+    seed: int = 42,
+    verbose: bool = True,
+) -> SimpleNamespace:
+    """
+    HeteroSAGE на том же гетерографе, что HeteroGAT — ablation «гетерограф vs attention».
+
+    Transductive; передайте те же ``train_idx`` / ``test_idx``,
+    что и для homo-GraphSAGE / HeteroGAT.
+    """
+    torch.manual_seed(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+
+    le = LabelEncoder()
+    y_enc = le.fit_transform([str(l) for l in labels])
+    n_classes = len(le.classes_)
+
+    data = build_hetero_data(G_nx, recipe_ids, I_nx, feat_df, y_enc)
+    n_rec = len(recipe_ids)
+    tr_idx, te_idx = stratified_recipe_split(
+        n_rec, y_enc, test_ratio, seed, train_idx, test_idx,
+    )
+    val_idx = _monitor_val_indices(tr_idx, y_enc, seed)
+
+    in_ch = data['recipe'].x.shape[1]
+    model = HeteroSAGECuisine(in_ch, hidden, n_classes)
+    opt = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=5e-4)
+
+    for ep in range(1, epochs + 1):
+        model.train()
+        opt.zero_grad()
+        out = model(data.x_dict, data.edge_index_dict)
+        loss = F.cross_entropy(out[tr_idx], data['recipe'].y[tr_idx])
+        loss.backward()
+        opt.step()
+
+        if verbose and ep % 20 == 0:
+            model.eval()
+            with torch.no_grad():
+                out_ev = model(data.x_dict, data.edge_index_dict)
+            pred_val = out_ev[val_idx].argmax(dim=1).cpu().numpy()
+            y_val = data['recipe'].y[val_idx].cpu().numpy()
+            acc = accuracy_score(y_val, pred_val)
+            print(f'  [HeteroSAGE] epoch {ep:3d}  loss={loss:.4f}  val_acc={acc:.3f}')
+
+    model.eval()
+    with torch.no_grad():
+        out_final = model(data.x_dict, data.edge_index_dict)
+        recipe_emb = model.embed(data.x_dict, data.edge_index_dict)['recipe'].cpu().numpy()
+    proba_te = torch.softmax(out_final[te_idx], dim=1).cpu().numpy()
+    pred_te = proba_te.argmax(axis=1)
+    y_te = data['recipe'].y[te_idx].cpu().numpy()
 
     res = _make_result(y_te, pred_te, proba_te, le)
     res.model = model

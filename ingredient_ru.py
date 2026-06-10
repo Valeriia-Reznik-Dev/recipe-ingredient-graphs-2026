@@ -61,7 +61,8 @@ ING_RU = {
     'yeast': 'дрожжи', 'gelatin': 'желатин', 'paprika': 'паприка',
     'chili powder': 'перец чили', 'cumin': 'зира', 'nutmeg': 'мускатный орех',
     'cloves': 'гвоздика', 'thyme': 'тимьян', 'rosemary': 'розмарин',
-    'bay leaf': 'лавровый лист', 'wine': 'вино', 'beer': 'пиво',
+    'bay leaf': 'лавровый лист', 'bay leaves': 'лавровые листья',
+    'wine': 'вино', 'beer': 'пиво',
     'chicken broth': 'куриный бульон', 'beef broth': 'говяжий бульон',
     'stock': 'бульон', 'worcestershire sauce': 'соус Worcestershire',
     'cocoa powder': 'какао-порошок', 'jell-o': 'желе Jell-O', 'gelatin dessert': 'желе',
@@ -267,7 +268,20 @@ ING_RU = {
     'italian sausage': 'итальянская колбаса', 'breakfast sausage': 'колбаса для завтрака',
     'ground pork': 'свиной фарш', 'ground turkey': 'фарш индейки', 'ground chicken': 'куриный фарш',
     'ground lamb': 'бараний фарш', 'boneless': 'без кости', 'skinless': 'без кожи',
-    'bone in': 'на кости', 'trimmed': 'очищенный', 'boneless skinless chicken breasts': 'куриная грудка без кости и кожи',
+    'bone in': 'на кости', 'trimmed': 'очищенный',     'boneless skinless chicken breasts': 'куриная грудка без кости и кожи',
+    'panela cheese': 'сыр panela', 'panela': 'panela',
+    'ginger slices': 'ломтики имбиря', 'sliced ginger': 'ломтики имбиря',
+    'regular milk': 'обычное молоко',
+    'mint': 'мята', 'fresh mint': 'свежая мята', 'chopped mint': 'рубленая мята',
+    'mint chopped': 'рубленая мята', 'minced mint': 'рубленая мята',
+    'breadcrumbs': 'панировка', 'dry breadcrumbs': 'сухая панировка',
+    'fresh white breadcrumbs': 'свежая белая панировка',
+    'fresh white bread crumbs': 'свежая белая панировка',
+    'white breadcrumbs': 'белая панировка',
+    'soya milk': 'соевое молоко', 'soy milk': 'соевое молоко',
+    'freshly ground pepper': 'свежемолотый перец',
+    'freshly grnd pepper': 'свежемолотый перец',
+    'freshly ground black pepper': 'свежемолотый чёрный перец',
 }
 
 _SKIP_WORDS = frozenset({'of', 'for', 'and', 'with', 'a', 'an', 'the', 'in', 'on', 'to', 'or', 'from', 'at', 'by', '+'})
@@ -305,12 +319,24 @@ _MODIFIERS = {
     'low fat': 'обезжиренный', 'flavored': 'ароматизированный',
     'large': 'крупное', 'small': 'мелкое', 'medium': 'среднее', 'boneless': 'без кости',
     'skinless': 'без кожи', 'lean': 'постное', 'dark': 'тёмное', 'light': 'лёгкое',
+    'regular': 'обычное', 'freshly': 'свежемолотый', 'grnd': 'молотый',
+    'soya': 'соевое', 'soy': 'соевое',
 }
+
+
+_ABBREV = (
+    ('grnd', 'ground'),
+    ('frshly', 'freshly'),
+    ('frsh', 'fresh'),
+)
 
 
 def _normalize(name) -> str:
     key = str(name).strip().lower()
-    return key.strip("'\"").replace('-', ' ')
+    key = key.strip("'\"").replace('-', ' ')
+    for abbr, full in _ABBREV:
+        key = key.replace(abbr, full)
+    return key
 
 
 def _dict_lookup(key: str) -> str | None:

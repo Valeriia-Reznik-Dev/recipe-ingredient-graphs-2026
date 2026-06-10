@@ -135,12 +135,20 @@ def make_fake_recipes(
         n_replace = max(1, int(n * mix_ratio))
         keep_n = n - n_replace
         kept = list(rng.choice(r, size=keep_n, replace=False)) if keep_n else []
+        new_ings = list(kept)
+        need = n - len(new_ings)
         candidates = [x for x in pool if x not in r]
-        if len(candidates) >= n_replace:
-            replaced = list(rng.choice(candidates, size=n_replace, replace=False))
+        if len(candidates) >= need:
+            new_ings.extend(rng.choice(candidates, size=need, replace=False))
+        elif candidates:
+            new_ings.extend(rng.choice(candidates, size=need, replace=True))
         else:
-            replaced = candidates
-        fake.append([str(x) for x in kept + replaced])
+            raise ValueError(
+                f"Пул ингредиентов не позволяет собрать fake-рецепт длины {n}: "
+                "нет кандидатов вне исходного рецепта"
+            )
+        assert len(new_ings) == n
+        fake.append([str(x) for x in new_ings])
     return fake
 
 
@@ -207,6 +215,8 @@ def train_graphsage_validity(
 ) -> ValidityClfResult:
     """readout='node' — эмбеддинг узла-рецепта; readout='mean' — global_mean_pool."""
     device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
+    torch.manual_seed(seed)
+    np.random.seed(seed)
     idx = np.arange(len(recipes))
     train_idx, test_idx = train_test_split(
         idx, test_size=test_size, random_state=seed, stratify=labels,
@@ -267,7 +277,11 @@ def eval_graphsage_inductive_split(
     device: str | None = None,
     readout: str = 'node',
 ) -> ValidityClfResult:
-    """Inductive GraphSAGE на заранее заданных train/test рецептах."""
+    """Inductive GraphSAGE на заранее заданных train/test рецептах.
+
+    Если ``feat_graph`` не задан, граф совместимости строится только по real-рецептам
+    в ``rec_tr`` (``y_tr >= 0.5``), без фейковых пар.
+    """
     device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
     y_tr = np.asarray(y_tr)
     y_te = np.asarray(y_te)
@@ -277,7 +291,13 @@ def eval_graphsage_inductive_split(
 
     if feat_graph is None:
         from recipe_negatives import build_cooc_graph
-        feat_graph = build_cooc_graph(rec_tr, min_freq=1, min_cooc=1)
+        real_tr = [r for r, y in zip(rec_tr, y_tr) if y >= 0.5]
+        if not real_tr:
+            raise ValueError(
+                "Передайте feat_graph явно (граф совместимости из real train-рецептов); "
+                "в rec_tr нет меток y=1 для автопостроения"
+            )
+        feat_graph = build_cooc_graph(real_tr, min_freq=1, min_cooc=1)
 
     data_tr = recipes_to_hetero(rec_tr, y_tr, I=feat_graph).to(device)
     data_te = recipes_to_hetero(rec_te, y_te, I=feat_graph).to(device)
@@ -328,7 +348,9 @@ def train_graphsage_validity_inductive(
 
     train и test — разные графы: тестовые рецепты не участвуют в обучении
     (message passing только по train-графу). Признаки ингредиентов из `feat_graph`
-    (обычно граф из обучающих рецептов). Модель применяется к test-графу как есть.
+    (обычно I_train — граф из real train-рецептов). Модель применяется к test-графу
+    как есть; это node classification на общем двудольном графе, не изолированные
+    подграфы (предсказание зависит от состава test-батча).
 
     Отличие от `train_graphsage_validity` (transductive): там единый граф из всех
     рецептов и маски train/test; тестовые узлы видны при свёртке.

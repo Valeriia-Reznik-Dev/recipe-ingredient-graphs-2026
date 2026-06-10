@@ -21,6 +21,9 @@ env/
 .vscode/
 .claude/
 
+# Secrets (local only — never commit)
+.env
+
 # Dev tooling
 .tools/
 recipe_graph_project_architecture.svg

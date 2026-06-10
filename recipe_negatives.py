@@ -78,16 +78,15 @@ def build_cooc_graph(recipes, min_freq=50, min_cooc=10):
             cooc[(a, b)] += 1
 
     valid = {ing for ing, c in ing_freq.items() if c >= min_freq}
-    total_pairs = sum(cooc.values()) or 1
-    total_ings = float(sum(ing_freq.values())) or 1.0
+    n_rec = float(len(recipes)) or 1.0
 
     G = nx.Graph()
     G.add_nodes_from(valid)
     for (a, b), w in cooc.items():
         if a in valid and b in valid and w >= min_cooc:
-            pab = w / total_pairs
-            pa = ing_freq[a] / total_ings
-            pb = ing_freq[b] / total_ings
+            pab = w / n_rec
+            pa = ing_freq[a] / n_rec
+            pb = ing_freq[b] / n_rec
             pmi = math.log(pab / (pa * pb + 1e-9))
             G.add_edge(a, b, weight=w, pmi=pmi)
     nx.set_node_attributes(G, dict(ing_freq), name="freq")
